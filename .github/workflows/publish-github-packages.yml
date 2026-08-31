@@ -1,0 +1,71 @@
+name: Publish GitHub Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java and Maven credentials
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Validate tag version
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          project_version="$(bash ./mvnw -q -Dstyle.color=never -DforceStdout help:evaluate -Dexpression=project.version)"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [ "$project_version" != "$tag_version" ]; then
+            echo "标签版本与项目版本不一致: tag=$tag_version, project=$project_version" >&2
+            exit 1
+          fi
+
+      - name: Verify
+        run: bash ./mvnw -B -ntp clean verify
+
+      - name: Require PostgreSQL and MySQL integration tests
+        shell: bash
+        run: |
+          report="async-task-spring-boot-autoconfigure/target/surefire-reports/TEST-com.zaviwayne.asynctask.jdbc.JdbcTaskStoreContainerIntegrationTest.xml"
+          test -f "$report"
+          python3 - "$report" <<'PY'
+          import sys
+          import xml.etree.ElementTree as element_tree
+
+          report = element_tree.parse(sys.argv[1]).getroot()
+          counters = {
+              name: int(report.attrib.get(name, "0"))
+              for name in ("tests", "skipped", "failures", "errors")
+          }
+          if counters["tests"] < 2:
+              raise SystemExit("PostgreSQL 和 MySQL 集成测试未全部执行")
+          if any(counters[name] != 0 for name in ("skipped", "failures", "errors")):
+              raise SystemExit(f"数据库集成测试未全部通过: {counters}")
+          PY
+
+      - name: Publish packages
+        run: >-
+          bash ./mvnw -B -ntp -DskipTests deploy
+          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
