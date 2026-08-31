@@ -1,0 +1,6 @@
+com.zaviwayne.asynctask.autoconfigure.AsyncTaskAutoConfiguration
+com.zaviwayne.asynctask.autoconfigure.jdbc.AsyncTaskJdbcAutoConfiguration
+com.zaviwayne.asynctask.autoconfigure.observability.AsyncTaskObservabilityAutoConfiguration
+com.zaviwayne.asynctask.autoconfigure.observability.AsyncTaskHealthAutoConfiguration
+com.zaviwayne.asynctask.autoconfigure.retention.AsyncTaskRetentionAutoConfiguration
+com.zaviwayne.asynctask.autoconfigure.kafka.AsyncTaskKafkaAutoConfiguration
