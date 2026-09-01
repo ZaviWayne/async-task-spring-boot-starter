@@ -271,66 +271,9 @@ async-task:
 仓库不内置 Maven 镜像和认证配置。依赖仓库镜像、代理及网络超时参数统一在本机 Maven
 `~/.m2/settings.xml` 中管理。
 
-## 发布到 GitHub Packages
+## 版本发布
 
-推送与根 POM 版本一致的 `v*` 标签后，`Publish GitHub Packages` 工作流会先执行完整测试，确认
-PostgreSQL 和 MySQL 容器集成测试未跳过，再将父 POM 和全部模块发布到当前仓库的 GitHub Packages。
-工作流使用仓库自带的 `GITHUB_TOKEN`，不需要配置额外的发布凭据。例如发布 `1.0.0`：
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-也可以在 GitHub Actions 页面手动触发当前 POM 版本的发布。已发布的版本不能重复部署；再次发布前必须
-先更新项目版本。
-
-其他项目使用 GitHub Packages 中的 Starter 时，需要配置仓库地址：
-
-```xml
-<repositories>
-    <repository>
-        <id>github</id>
-        <url>https://maven.pkg.github.com/ZaviWayne/async-task-spring-boot-starter</url>
-    </repository>
-</repositories>
-```
-
-并在本机 `~/.m2/settings.xml` 中为 `github` 配置具有 `read:packages` 权限的 GitHub Personal Access Token：
-
-```xml
-<servers>
-    <server>
-        <id>github</id>
-        <username>YOUR_GITHUB_USERNAME</username>
-        <password>YOUR_GITHUB_TOKEN</password>
-    </server>
-</servers>
-```
-
-## 发布到 Maven Central
-
-发布前必须先在 Central Portal 验证 `com.zaviwayne` 命名空间所有权，并在本机
-`~/.m2/settings.xml` 中配置 Central 用户 Token。服务器 ID 必须与项目发布 Profile 中的
-`central` 保持一致：
-
-```xml
-<servers>
-    <server>
-        <id>central</id>
-        <username>${env.CENTRAL_USERNAME}</username>
-        <password>${env.CENTRAL_TOKEN}</password>
-    </server>
-</servers>
-```
-
-本机还需提供可用的 GPG 签名密钥；账号 Token、GPG 私钥和口令均不得提交到仓库。完成本地配置后执行：
-
-```bash
-./mvnw -Prelease clean deploy
-```
-
-`release` Profile 会为所有模块签名，并通过 Sonatype Central Publishing Maven Plugin 上传发布包。
+维护者发布新版本到 Maven Central 的流程见 [RELEASING.md](RELEASING.md)。
 
 ## License
 
